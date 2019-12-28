@@ -1,0 +1,92 @@
+	See ./TL-Changes.
+
+--- dvisvgm-2.6.3/Makefile.am	2019-03-09 04:09:01.000000000 -0800
++++ dvisvgm-src/Makefile.am	2019-03-10 11:06:34.614937057 -0700
+@@ -6,5 +6,5 @@
+ AUTOMAKE_OPTIONS = foreign
+ EXTRA_DIST = COPYING
+-SUBDIRS = libs m4 src tests doc
++SUBDIRS = libs src #not for TL: tests doc
+ ACLOCAL_AMFLAGS = -I m4
+ 
+--- dvisvgm-2.6.3/src/Makefile.am	2019-03-09 04:09:01.000000000 -0800
++++ dvisvgm-src/src/Makefile.am	2019-03-10 11:08:14.712515629 -0700
+@@ -16,9 +16,6 @@
+ 	$(noinst_LIBRARIES) \
+ 	../libs/clipper/libclipper.a \
+-	$(FREETYPE_LIBS) \
+-	$(FONTFORGE_LIBS) \
+ 	$(POTRACE_LIBS) \
+-	$(XXHASH_LIBS) \
+-	$(ZLIB_LIBS)
++	$(XXHASH_LIBS)
+ 
+ if ENABLE_WOFF
+@@ -35,5 +32,13 @@
+ endif
+ 
++dvisvgm_LDADD += \
++	$(KPATHSEA_LIBS) \
++	$(FREETYPE2_LIBS) \
++	$(FONTFORGE_LIBS) \
++	$(ZLIB_LIBS) \
++	$(LIBGS_LIBS)
++
+ dvisvgm_DEPENDENCIES = $(noinst_LIBRARIES)
++dvisvgm_DEPENDENCIES += $(KPATHSEA_DEPEND) $(ZLIB_DEPEND) $(FREETYPE2_DEPEND)
+ 
+ libdvisvgm_a_SOURCES = \
+@@ -259,15 +264,11 @@
+ EXTRA_DIST = options.xml options.dtd iapi.h ierrors.h MiKTeXCom.hpp MiKTeXCom.cpp
+ 
+-AM_CFLAGS = -Wall \
+-	$(ZLIB_CFLAGS) \
++AM_CFLAGS = $(WARNING_CFLAGS) \
++	$(ZLIB_INCLUDES) \
+ 	$(CODE_COVERAGE_CFLAGS)
+ 
+-AM_CXXFLAGS = -Wall -Wnon-virtual-dtor \
++AM_CXXFLAGS = $(WARNING_CXXFLAGS) -Wnon-virtual-dtor \
+ 	-I$(dvisvgm_srcdir)/libs/clipper \
+-	-I$(dvisvgm_srcdir)/libs/variant/include \
+-	$(KPSE_CFLAGS) \
+-	$(FREETYPE_CFLAGS) \
+-	$(ZLIB_CFLAGS) \
+-	$(CODE_COVERAGE_CFLAGS)
++	-I$(dvisvgm_srcdir)/libs/variant/include
+ 
+ AM_CXXFLAGS += \
+@@ -299,5 +300,18 @@
+ endif
+ 
++AM_CXXFLAGS += \
++	$(KPATHSEA_INCLUDES) \
++	$(POTRACE_INCLUDES) \
++	$(FREETYPE2_INCLUDES) \
++	$(ZLIB_INCLUDES) \
++	$(LIBGS_INCLUDES) \
++	$(CODE_COVERAGE_CFLAGS)
+ 
++if WIN32
++AM_CXXFLAGS += -DTEXLIVEWIN32
++endif WIN32
++
++if ! TEXLIVE_BUILD
++# TL: do not try to rebuild these source files.
+ # the command-line parser class is generated from options.xml by opt2cpp
+ $(srcdir)/CommandLine.hpp: options.xml
+@@ -312,6 +326,14 @@
+ 
+ psdefs.ps: ;
++endif ! TEXLIVE_BUILD
+ 
+ @CODE_COVERAGE_RULES@
+ 
+ CLEANFILES = *.gcda *.gcno
++
++# Rebuild libkpathsea:
++@KPATHSEA_RULE@
++# Rebuild libfreetype:
++@FREETYPE2_RULE@
++# Rebuild libz:
++@ZLIB_RULE@
